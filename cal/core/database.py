@@ -5,7 +5,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-from .models import Event
+from .models import event_t
 
 log = logging.getLogger(__name__)
 
@@ -100,8 +100,8 @@ class Database:
 
     # ---- CRUD ------------------------------------------------------------
     @staticmethod
-    def _row_to_event(row: sqlite3.Row) -> Event:
-        return Event(
+    def _row_to_event(row: sqlite3.Row) -> event_t:
+        return event_t(
             id=row["id"],
             title=row["title"],
             start_ts=row["start_ts"],
@@ -113,7 +113,7 @@ class Database:
             updated_at=row["updated_at"],
         )
 
-    def add_event(self, ev: Event) -> int:
+    def add_event(self, ev: event_t) -> int:
         now = int(time.time())
         with self.conn:
             cur = self.conn.execute(
@@ -127,15 +127,15 @@ class Database:
         ev.id, ev.created_at, ev.updated_at = new_id, now, now
         return new_id
 
-    def get_event(self, event_id: int) -> Event | None:
+    def get_event(self, event_id: int) -> event_t | None:
         row = self.conn.execute(
             "SELECT * FROM events WHERE id = ?", (event_id,)
         ).fetchone()
         return self._row_to_event(row) if row else None
 
-    def update_event(self, ev: Event) -> None:
+    def update_event(self, ev: event_t) -> None:
         if ev.id is None:
-            raise ValueError("Event has no id")
+            raise ValueError("event_t has no id")
         now = int(time.time())
         with self.conn:
             cur = self.conn.execute(
@@ -155,8 +155,8 @@ class Database:
             )
         return cur.rowcount > 0
 
-    def events_in_range(self, start_ts: int, end_ts: int) -> list[Event]:
-        """Event giao với [start_ts, end_ts), cộng mọi event lặp bắt đầu
+    def events_in_range(self, start_ts: int, end_ts: int) -> list[event_t]:
+        """event_t giao với [start_ts, end_ts), cộng mọi event lặp bắt đầu
         trước end_ts (việc mở rộng các lần lặp làm ở recurrence, M5)."""
         rows = self.conn.execute(
             "SELECT * FROM events WHERE start_ts < :e AND"
