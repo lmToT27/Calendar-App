@@ -1,6 +1,6 @@
 from typing import Optional
 
-class event_t:
+class Event:
     id: Optional[int]
     title: str
     start_ts: int
@@ -25,4 +25,4 @@ class event_t:
     def __eq__(self, other: object) -> bool: ...
 
 def add(a: int, b: int) -> int: ...
-def sort_events(events: list[event_t]) -> list[event_t]: ...
+def sort_events(events: list[Event]) -> list[Event]: ...

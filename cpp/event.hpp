@@ -5,7 +5,7 @@
 
 namespace cal {
 
-struct event_t {
+struct Event {
     std::optional <int64_t> id;
     std::string title;
     int64_t start_ts = 0;
@@ -16,7 +16,7 @@ struct event_t {
     int64_t created_at = 0;
     int64_t updated_at = 0;
 
-    bool operator == (const event_t& other) const {
+    bool operator == (const Event& other) const {
         if (id != other.id) return false;
         if (title != other.title) return false;
         if (start_ts != other.start_ts) return false;
