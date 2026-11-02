@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "event.hpp"
+#include "search.hpp"
 
 namespace py = pybind11;
 
@@ -64,4 +65,11 @@ PYBIND11_MODULE(_core, m) {
                    " " + std::to_string(e.start_ts) + ".." +
                    std::to_string(e.end_ts) + ">";
         });
+
+    py::class_<cal::Match>(m, "Match")
+        .def_readonly("index", &cal::Match::index)
+        .def_readonly("score", &cal::Match::score)
+        .def_readonly("positions", &cal::Match::positions);
+    m.def("fuzzy_search", &cal::fuzzy_search, py::arg("query"),
+        py::arg("candidates"), py::arg("limit") = 50);
 }

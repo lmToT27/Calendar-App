@@ -8,6 +8,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(_core cpp/bindings.cpp)
+pybind11_add_module(_core cpp/bindings.cpp cpp/search.cpp)
 set_target_properties(_core PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/cal)

@@ -26,3 +26,10 @@ class Event:
 
 def add(a: int, b: int) -> int: ...
 def sort_events(events: list[Event]) -> list[Event]: ...
+
+class Match:
+    index: int
+    score: int
+    positions: list[int]
+
+def fuzzy_search(query: str, candidates: list[str], limit: int = 50) -> list[Match]: ...
