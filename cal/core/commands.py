@@ -9,6 +9,11 @@ from typing import Callable, Mapping, Protocol, Sequence
 from . import keybinds as kb
 from .keybinds import KeyParseError, parse_key
 
+import unicodedata
+
+from cal import _core
+from .dateparser import normalize
+
 log = logging.getLogger(__name__)
 
 
@@ -76,6 +81,28 @@ class History:
         self._undo.clear()
         self._redo.clear()
 
+def to_search_text(text: str) -> str:
+    """Lowercase, bỏ dấu, mỗi ký tự -> đúng 1 byte ASCII (ký tự lạ thành '?').
+    Nhờ đó vị trí C++ trả về khớp với chỉ số ký tự trong chuỗi NFC gốc."""
+    return normalize(text)[1].encode("ascii", "replace").decode("ascii")
+
+
+def merge_positions(positions: Sequence[int]) -> list[tuple[int, int]]:
+    """[1,2,3,7] -> [(1,4),(7,8)]: các đoạn liền nhau để UI tô đậm."""
+    spans: list[tuple[int, int]] = []
+    for p in positions:
+        if spans and spans[-1][1] == p:
+            spans[-1] = (spans[-1][0], p + 1)
+        else:
+            spans.append((p, p + 1))
+    return spans
+
+
+@dataclass(frozen=True)
+class SearchHit:
+    command: Command
+    score: int
+    positions: tuple[int, ...]  # chỉ số ký tự trong command.title
 
 # ---- registry -----------------------------------------------------------
 @dataclass(frozen=True)
@@ -93,6 +120,8 @@ class CommandRegistry:
         self._bindings: dict[str, tuple[str, ...]] = {}
         self._by_key: dict[str, str] = {}
         self.on_error: Callable[[Command, Exception], None] | None = None
+        self._ordered: list[Command] = []
+        self._search_titles: list[str] = []
 
     def register(self, cmd: Command) -> None:
         if cmd.id in self._commands:
@@ -102,11 +131,23 @@ class CommandRegistry:
             if key in self._by_key:
                 raise ValueError(
                     f"Phím mặc định {key} của '{cmd.id}' trùng với '{self._by_key[key]}'")
-        self._commands[cmd.id] = replace(cmd, keys=keys)
+        stored = replace(cmd, keys=keys, title=unicodedata.normalize("NFC", cmd.title))
+        self._commands[cmd.id] = stored
+        self._ordered.append(stored)
+        self._search_titles.append(to_search_text(stored.title))
         self._defaults[cmd.id] = keys
         self._bindings[cmd.id] = keys
         for key in keys:
             self._by_key[key] = cmd.id
+
+    def search(self, query: str, limit: int = 50) -> list[SearchHit]:
+        """Fuzzy search theo tiêu đề, bỏ qua dấu và hoa thường.
+        Query rỗng trả về mọi lệnh theo thứ tự đăng ký."""
+        matches = _core.fuzzy_search(to_search_text(query), self._search_titles, limit)
+        return [
+            SearchHit(self._ordered[m.index], m.score, tuple(m.positions))
+            for m in matches
+        ]
 
     def get(self, command_id: str) -> Command:
         return self._commands[command_id]
